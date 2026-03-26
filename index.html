@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin Panel - RoyalTech</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 p-6">
+
+  <h1 class="text-3xl font-bold mb-6 text-center">ROYALTECH ADMIN - Client Requests</h1>
+
+  <!-- Login Section -->
+  <div id="loginSection" class="max-w-md mx-auto bg-white p-6 rounded shadow">
+    <h2 class="text-xl font-bold mb-4">Royaltech Login</h2>
+    <input id="password" type="password" placeholder="Enter Password" class="w-full p-3 border rounded mb-4">
+    <button onclick="login()" class="bg-blue-600 text-white w-full py-2 rounded">Login</button>
+	   <img src="logo.png" alt="Girl in a jacket" width="500" height="600">
+
+  </div>
+
+  <!-- Admin Dashboard -->
+  <div id="adminSection" class="hidden max-w-4xl mx-auto">
+    <div class="flex justify-between items-center mb-4">
+      <h2 class="text-2xl font-bold">Submitted Requests</h2>
+      <button onclick="logout()" class="bg-red-500 text-white px-4 py-2 rounded">Logout</button>
+    </div>
+
+    <div id="dataContainer" class="grid gap-4"></div>
+
+    <button onclick="clearData()" class="mt-4 bg-red-700 text-white px-4 py-2 rounded">Clear All Data</button>
+  </div>
+
+<script>
+const ADMIN_PASSWORD = "royaltech123"; // change this
+
+function login() {
+  const pass = document.getElementById("password").value;
+  if (pass === ADMIN_PASSWORD) {
+    document.getElementById("loginSection").classList.add("hidden");
+    document.getElementById("adminSection").classList.remove("hidden");
+    loadData();
+  } else {
+    alert("Wrong password!");
+  }
+}
+// 🔥 Firebase Config
+const firebaseConfig = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT.firebaseapp.com",
+  projectId: "YOUR_PROJECT_ID",
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+// 📥 Load client requests
+async function loadData() {
+  const container = document.getElementById("dataContainer");
+  container.innerHTML = "Loading...";
+
+  const snapshot = await db.collection("quoteRequests").orderBy("timestamp", "desc").get();
+
+  if (snapshot.empty) {
+    container.innerHTML = "<p>No data found</p>";
+    return;
+  }
+
+  container.innerHTML = snapshot.docs.map(doc => {
+    const r = doc.data();
+    return `
+      <div class="bg-white p-4 rounded shadow">
+        <p><strong>${r.timestamp}</strong></p>
+        <p><strong>Name:</strong> ${r.name}</p>
+        <p><strong>Location:</strong> ${r.location}</p>
+        <p><strong>Phone:</strong> ${r.phone}</p>
+        <p><strong>Roof Size:</strong> ${r.roof} sqm</p>
+        <button onclick="deleteItem('${doc.id}')" class="mt-2 bg-red-500 text-white px-3 py-1 rounded">Delete</button>
+      </div>
+    `;
+  }).join("");
+}
+
+// 🗑 Delete request
+async function deleteItem(id) {
+  if (confirm("Delete this request?")) {
+    await db.collection("quoteRequests").doc(id).delete();
+    loadData();
+  }
+}
+
+// 💬 Messenger Auto-reply (simulate sending message)
+async function sendMessengerReply(request) {
+  // Replace this block with real Messenger API / webhook integration
+  console.log(`Sending auto-reply to ${request.name} (${request.phone}):`);
+  console.log("Hi! Thank you for your request at RoyalTech. We will contact you shortly.");
+}
+
+// Listen to new requests in real-time and auto-reply
+db.collection("quoteRequests").onSnapshot(snapshot => {
+  snapshot.docChanges().forEach(change => {
+    if (change.type === "added") {
+      const newRequest = change.doc.data();
+      sendMessengerReply(newRequest);
+    }
+  });
+});
+
+function logout() {
+  document.getElementById("loginSection").classList.remove("hidden");
+  document.getElementById("adminSection").classList.add("hidden");
+}
+
+function loadData() {
+  const container = document.getElementById("dataContainer");
+  const requests = JSON.parse(localStorage.getItem("requests")) || [];
+
+  if (requests.length === 0) {
+    container.innerHTML = "<p class='text-center'>No requests found.</p>";
+    return;
+  }
+
+  container.innerHTML = requests.map((r, i) => `
+    <div class="bg-white p-4 rounded shadow">
+      <p><strong>#${i + 1}</strong> | ${r.timestamp}</p>
+      <p><strong>Name:</strong> ${r.name}</p>
+      <p><strong>Location:</strong> ${r.location}</p>
+      <p><strong>Phone:</strong> ${r.phone}</p>
+      <p><strong>Roof Size:</strong> ${r.roof} sqm</p>
+      <button onclick="deleteItem(${i})" class="mt-2 bg-red-500 text-white px-3 py-1 rounded">Delete</button>
+    </div>
+  `).join("");
+}
+
+function deleteItem(index) {
+  let requests = JSON.parse(localStorage.getItem("requests")) || [];
+  requests.splice(index, 1);
+  localStorage.setItem("requests", JSON.stringify(requests));
+  loadData();
+}
+
+function clearData() {
+  if (confirm("Are you sure you want to delete ALL data?")) {
+    localStorage.removeItem("requests");
+    loadData();
+  }
+}
+async function sendMessengerReply(request) {
+  await fetch('YOUR_MESSENGER_WEBHOOK_URL', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({
+      phone: request.phone,
+      message: `Hi ${request.name}! Thank you for your request. We will contact you shortly.`
+    })
+  });
+}
+
+</script>
+
+</body>
+</html>

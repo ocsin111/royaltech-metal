@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin Panel - RoyalTech</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 p-6">
+
+  <h1 class="text-3xl font-bold mb-6 text-center">Admin Panel - Client Requests</h1>
+
+  <!-- Login Section -->
+  <div id="loginSection" class="max-w-md mx-auto bg-white p-6 rounded shadow">
+    <h2 class="text-xl font-bold mb-4">Admin Login</h2>
+    <input id="password" type="password" placeholder="Enter Password" class="w-full p-3 border rounded mb-4">
+    <button onclick="login()" class="bg-blue-600 text-white w-full py-2 rounded">Login</button>
+  </div>
+
+  <!-- Admin Dashboard -->
+  <div id="adminSection" class="hidden max-w-4xl mx-auto">
+    <div class="flex justify-between items-center mb-4">
+      <h2 class="text-2xl font-bold">Submitted Requests</h2>
+      <button onclick="logout()" class="bg-red-500 text-white px-4 py-2 rounded">Logout</button>
+    </div>
+
+    <div id="dataContainer" class="grid gap-4"></div>
+
+    <button onclick="clearData()" class="mt-4 bg-red-700 text-white px-4 py-2 rounded">Clear All Data</button>
+  </div>
+
+<script>
+const ADMIN_PASSWORD = "admin123"; // change this
+
+function login() {
+  const pass = document.getElementById("password").value;
+  if (pass === ADMIN_PASSWORD) {
+    document.getElementById("loginSection").classList.add("hidden");
+    document.getElementById("adminSection").classList.remove("hidden");
+    loadData();
+  } else {
+    alert("Wrong password!");
+  }
+}
+
+function logout() {
+  document.getElementById("loginSection").classList.remove("hidden");
+  document.getElementById("adminSection").classList.add("hidden");
+}
+
+function loadData() {
+  const container = document.getElementById("dataContainer");
+  const requests = JSON.parse(localStorage.getItem("requests")) || [];
+
+  if (requests.length === 0) {
+    container.innerHTML = "<p class='text-center'>No requests found.</p>";
+    return;
+  }
+
+  container.innerHTML = requests.map((r, i) => `
+    <div class="bg-white p-4 rounded shadow">
+      <p><strong>#${i + 1}</strong> | ${r.timestamp}</p>
+      <p><strong>Name:</strong> ${r.name}</p>
+      <p><strong>Location:</strong> ${r.location}</p>
+      <p><strong>Phone:</strong> ${r.phone}</p>
+      <p><strong>Roof Size:</strong> ${r.roof} sqm</p>
+      <button onclick="deleteItem(${i})" class="mt-2 bg-red-500 text-white px-3 py-1 rounded">Delete</button>
+    </div>
+  `).join("");
+}
+
+function deleteItem(index) {
+  let requests = JSON.parse(localStorage.getItem("requests")) || [];
+  requests.splice(index, 1);
+  localStorage.setItem("requests", JSON.stringify(requests));
+  loadData();
+}
+
+function clearData() {
+  if (confirm("Are you sure you want to delete ALL data?")) {
+    localStorage.removeItem("requests");
+    loadData();
+  }
+}
+</script>
+
+</body>
+</html>
